@@ -1,0 +1,8 @@
+{
+  "name": "The Last Guardian",
+  "title_ids": ["CUSA03745"],
+  "archives": ["trico_boot", "trico_001", "trico_002", "trico_003"],
+  "patch_suffix": "p",
+  "skip_dirs": ["_tmp", "stages/", "probe", "clut", "globalshadow", "cubemap", "lightmap"],
+  "linear_suffixes": ["_sp", "_mk", "_mask", "_frenelmask", "_gobo", "_lightshaft", "_dirty", "_rg"]
+}

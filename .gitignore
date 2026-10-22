@@ -1,0 +1,6 @@
+.venv/
+bin/
+models/
+__pycache__/
+*.work/
+scan.csv
