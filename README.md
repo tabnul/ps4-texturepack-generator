@@ -97,6 +97,32 @@ Left out: the profile's data folders (`skip_dirs`: level data, light maps, cube 
 uncompressed and float formats, textures under 256 pixels and textures already larger than
 2048×2048 pixels.
 
+### Size and screen resolution
+
+How much of a texture you actually see depends on your screen resolution. The GPU picks the mip
+level that fits the number of screen pixels a surface covers, so the largest upscaled level is only
+used when a surface fills more pixels than the level below it: close up, and at high resolutions.
+
+| Screen | `--max-size` |
+|---|---|
+| 1920×1080 | 4096 (default) is enough; 8192 rarely shows |
+| 2560×1440 and up, ultrawide, 4K | 8192 shows on close-ups; it costs 4x the disk and video memory for those textures |
+
+## Game notes
+
+### The Last Guardian (`tlg`)
+
+- **Tested best at 3840×1600:** `--max-size 8192` (colour 4x, normal maps 2x). Compared texture by
+  texture against a 4096 pack in game, every texture was the same or better. The full pack is about
+  67 GB on disk; the port keeps at most 16 GB of it in video memory.
+  ```
+  texpack make "D:\Games\CUSA03745" "D:\Packs\UltraSharp 4x 8k" --max-size 8192
+  ```
+- **Left out as already large (80 textures, over 2048×2048):** mostly 4096×4096 textures of big set
+  pieces (drawbridges, chain gates, pulleys, the village, floor masks), pre-rendered cutscene stills
+  and the end credits (`ui/cutscene`, `ui/credit_ed`), distant-LOD stage textures and one 16384×512
+  splash strip.
+
 ## Troubleshooting
 
 | Problem | Fix |
