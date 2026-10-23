@@ -119,10 +119,20 @@ used when a surface fills more pixels than the level below it: close up, and at 
 
 - **Tested best at 3840×1600:** `--max-size 8192` (colour 4x, normal maps 2x). Compared texture by
   texture against a 4096 pack in game, every texture was the same or better. The full pack is about
-  67 GB on disk; the port keeps at most 16 GB of it in video memory.
+  72 GB on disk; the port keeps at most 16 GB of it in video memory.
   ```
   texpack make "D:\Games\CUSA03745" "D:\Packs\UltraSharp 4x 8k" --max-size 8192
   ```
+- **How long it takes:** that command (2629 colour textures at 4x, 870 normal maps at 2x, full
+  BC7, default `--jobs 3 --encode-jobs 6`) took **143 minutes** with no failures, giving 3505
+  index keys and 72 GB. The machine:
+
+  | | |
+  |---|---|
+  | GPU | NVIDIA GeForce RTX 5090, 32 GB (driver 617.42) |
+  | CPU | AMD Ryzen 7 9800X3D, 8 cores / 16 threads |
+  | RAM | 32 GB DDR5-6000 |
+  | Disk | Samsung 980 PRO 2 TB NVMe (pack and work folder) |
 - **The large textures and `--max-size`:** 55 textures already have more pixels than 2048×2048. At
   the default 4096 they are left out; at 8192 they get 2x (each about 85 MB in the pack, 4-8x the
   original; together about 5 GB more):
