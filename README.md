@@ -94,8 +94,9 @@ normal maps. Grey data stored in colour formats (masks, specular; the profile's 
 gets linear mips so a soft mask stays soft.
 
 Left out: the profile's data folders (`skip_dirs`: level data, light maps, cube maps...),
-uncompressed and float formats, textures under 256 pixels and textures already larger than
-2048×2048 pixels.
+uncompressed and float formats, textures under 256 pixels and textures that already have more
+pixels than a 2048×2048 texture (4.2 million, whatever the shape: 4096×2048 is left out, 8192×256
+is not).
 
 ### Size and screen resolution
 
@@ -118,10 +119,17 @@ used when a surface fills more pixels than the level below it: close up, and at 
   ```
   texpack make "D:\Games\CUSA03745" "D:\Packs\UltraSharp 4x 8k" --max-size 8192
   ```
-- **Left out as already large (80 textures, over 2048×2048):** mostly 4096×4096 textures of big set
-  pieces (drawbridges, chain gates, pulleys, the village, floor masks), pre-rendered cutscene stills
-  and the end credits (`ui/cutscene`, `ui/credit_ed`), distant-LOD stage textures and one 16384×512
-  splash strip.
+- **Left out as already large:** 80 textures have more pixels than a 2048×2048 texture (4.2 million),
+  whatever their shape:
+
+  | Size | Count | What |
+  |---|---|---|
+  | 4096×4096 | 53 | big set pieces (drawbridges, chain gates, pulleys, village walls, floor masks, statues) and distant-LOD stage textures |
+  | 3236×4584 | 17 | pre-rendered cutscene stills (`ui/cutscene`) |
+  | 1920×4096 | 6 | end credits (`ui/credit_ed`) |
+  | 4096×2048, 2048×4096 | 2 | distant-LOD stage textures |
+  | 2664×1600 | 1 | sea of clouds (`demo/`) |
+  | 16384×512 | 1 | water splash strip (`effects/`) |
 
 ## Troubleshooting
 
