@@ -93,10 +93,14 @@ more: colour textures (BC1/2/3/7), single-channel textures (BC4) and, with `--no
 normal maps. Grey data stored in colour formats (masks, specular; the profile's `linear_suffixes`)
 gets linear mips so a soft mask stays soft.
 
-Left out: the profile's data folders (`skip_dirs`: level data, light maps, cube maps...),
-uncompressed and float formats, textures under 256 pixels and textures that already have more
-pixels than a 2048×2048 texture (4.2 million, whatever the shape: 4096×2048 is left out, 8192×256
-is not).
+Left out:
+- the profile's data folders (`skip_dirs`: level data, light maps, cube maps...) and hand-drawn art
+  (`keep_dirs`: cutscene stills, credits), which stays as the artists made it;
+- uncompressed and float formats, and textures under 256 pixels;
+- **already large** textures: those that would not get at least 2x within the `--max-size` budget
+  (the pixel count counts, not the shape), or beyond the GPU's 16384 pixels on a side. At the
+  default 4096 that is anything with more pixels than 2048×2048; at `--max-size 8192`, 4096×4096
+  textures get 2x and go in.
 
 ### Size and screen resolution
 
@@ -119,17 +123,21 @@ used when a surface fills more pixels than the level below it: close up, and at 
   ```
   texpack make "D:\Games\CUSA03745" "D:\Packs\UltraSharp 4x 8k" --max-size 8192
   ```
-- **Left out as already large:** 80 textures have more pixels than a 2048×2048 texture (4.2 million),
-  whatever their shape:
+- **The large textures and `--max-size`:** 55 textures already have more pixels than 2048×2048. At
+  the default 4096 they are left out; at 8192 they get 2x (each about 85 MB in the pack, 4-8x the
+  original; together about 5 GB more):
 
-  | Size | Count | What |
-  |---|---|---|
-  | 4096×4096 | 53 | big set pieces (drawbridges, chain gates, pulleys, village walls, floor masks, statues) and distant-LOD stage textures |
-  | 3236×4584 | 17 | pre-rendered cutscene stills (`ui/cutscene`) |
-  | 1920×4096 | 6 | end credits (`ui/credit_ed`) |
-  | 4096×2048, 2048×4096 | 2 | distant-LOD stage textures |
-  | 2664×1600 | 1 | sea of clouds (`demo/`) |
-  | 16384×512 | 1 | water splash strip (`effects/`) |
+  | Size | Count | What | At 8192 |
+  |---|---|---|---|
+  | 4096×4096 | 53 | big set pieces (drawbridges, chain gates, pulleys, village walls, floor masks, statues) and distant-LOD stage textures | 2x: visibly crisper wood and stone up close |
+  | 4096×2048, 2048×4096 | 2 | distant-LOD stage textures | 2x |
+  | 16384×512 and other 16384-wide strips | 10 | effects (splash, ripples, smoke, dust) and two foliage strips | left out at any size: the GPU limit is 16384 on a side |
+
+- **Artwork stays original** (`keep_dirs`, 152 textures): the pre-rendered cutscene stills
+  (`ui/cutscene`), the opening and end credits (`ui/credit_op`, `ui/credit_ed`), the loading
+  screens (`ui/loading`) and the five layers of the sea-of-clouds cutscene background. They are
+  hand-drawn; an upscaler changes the drawing. To upscale them
+  anyway, copy `profiles	lg.json`, empty `keep_dirs` and pass the copy with `--profile`.
 
 ## Troubleshooting
 
@@ -153,7 +161,8 @@ A profile is a JSON file in `profiles\` (its file name is the id):
   "archives": ["trico_boot", "trico_001", "trico_002", "trico_003"],
   "patch_suffix": "p",
   "skip_dirs": ["_tmp", "stages/", "probe", "clut", "globalshadow", "cubemap", "lightmap"],
-  "linear_suffixes": ["_sp", "_mk", "_mask", "_frenelmask", "_gobo", "_lightshaft", "_dirty", "_rg"]
+  "linear_suffixes": ["_sp", "_mk", "_mask", "_frenelmask", "_gobo", "_lightshaft", "_dirty", "_rg"],
+  "keep_dirs": ["ui/cutscene/", "ui/credit_ed/", "ui/credit_op/", "ui/loading/", "demo/fb2b_c02_sea_of_clouds"]
 }
 ```
 
@@ -165,9 +174,10 @@ A profile is a JSON file in `profiles\` (its file name is the id):
 | `patch_suffix` | A patch archive is `<archive><suffix>.psarc` and overrides its base archive |
 | `skip_dirs` | Parts of texture paths to leave out: data that is not seen as an image |
 | `linear_suffixes` | File name endings (without `.gnf`) of grey data in colour formats: linear mips |
+| `keep_dirs` | Parts of texture paths of hand-drawn art (cutscene stills, credits) to leave as it is. Optional |
 
 Start with `skip_dirs` and `linear_suffixes` empty, make a pack with `--only` on a few folders and
-look in the game. `pack_scan.py <game> out.csv` lists every texture with the decision and the reason.
+look in the game. `pack_scan.py <game> out.csv [max size]` lists every texture with the decision and the reason.
 
 ## Pack format
 

@@ -6,6 +6,7 @@
   archives         .psarc base names in load order; a later archive overrides an earlier one
   patch_suffix     an archive's patch has this suffix ("p": trico_001p.psarc) and overrides it
   skip_dirs        path parts of textures that are data, not images (lookup tables, shadow maps, probes)
+  keep_dirs        path parts of hand-drawn art (cutscene stills, credits) that stays as the artists made it
   linear_suffixes  name endings of grey data in colour formats (masks, roughness): linear mips, no sRGB
 
 The rest of the tool (GNF, psarc, tiling, upscale, encode) is the same for every PS4 game."""
@@ -27,6 +28,7 @@ class Profile:
     patch_suffix: str
     skip_dirs: tuple
     linear_suffixes: tuple
+    keep_dirs: tuple = ()
 
     def archive_names(self):
         """Archive names (without .psarc) in override order: each base, then its patch."""
@@ -46,7 +48,8 @@ def load(name):
         sys.exit(f'no game profile {name!r}; available: {", ".join(p.id for p in available())}')
     data = json.loads(path.read_text(encoding='utf-8'))
     return Profile(path.stem, data['name'], tuple(data.get('title_ids', ())), tuple(data['archives']),
-                   data.get('patch_suffix', ''), tuple(data.get('skip_dirs', ())), tuple(data.get('linear_suffixes', ())))
+                   data.get('patch_suffix', ''), tuple(data.get('skip_dirs', ())), tuple(data.get('linear_suffixes', ())),
+                   tuple(data.get('keep_dirs', ())))
 
 
 def available():

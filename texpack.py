@@ -78,7 +78,7 @@ def make(args):
     work.mkdir(parents=True, exist_ok=True)
     # 1. Which textures: colour maps, and the BC5 normal maps unless --normal-scale 0.
     manifest = work / 'manifest.csv'
-    write(scan(args.game, normals=args.normal_scale > 0), manifest)
+    write(scan(args.game, normals=args.normal_scale > 0, max_size=args.max_size), manifest)
     packed = [r for r in csv.DictReader(open(manifest)) if r['decision'] == 'pack']
     rows = [r for r in packed if args.only in r['path']]
     normals = sum(r['format'] == 'BC5' for r in rows)

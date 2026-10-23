@@ -3,7 +3,7 @@
 """List every GNF in a PS4 game's psarcs (the archives of its game profile) with format, size and tile mode, and decide whether it goes in the
 2x texture pack. Writes a CSV manifest (path, archive, format, width, height, tiling, decision, reason).
 
-usage: pack_scan.py <game dir> <out.csv>"""
+usage: pack_scan.py <game dir> <out.csv> [max size, default 4096: texpack --max-size]"""
 import csv
 import hashlib
 import re
@@ -58,24 +58,26 @@ def inflate(raw):
         return raw
 
 
-def decide(path, fmt, width, height, tiling, normals=False, skip_dirs=()):
+def decide(path, fmt, width, height, tiling, normals=False, skip_dirs=(), keep_dirs=(), max_size=4096):
     side = max(width, height)
     if any(d in path for d in skip_dirs):  # the game profile's data folders
         return 'skip', 'data dir'
+    if any(d in path for d in keep_dirs):  # the game profile's hand-drawn art
+        return 'skip', 'artwork'
     if fmt not in COLOR and not (normals and fmt == 39):  # 39: BC5 normal map
         return 'skip', f'format {NAMES.get(fmt, fmt)} (data/normal)'
     if side < 256:
         return 'skip', 'small (<256)'
-    if width * height > 2048 * 2048:  # under the 4096² budget of pack_build.fit it would gain less than 2x
+    if 4 * width * height > max_size * max_size or 2 * side > 16384:  # pack_build.fit would give it less than 2x
         return 'skip', 'already large'
     if tiling != 13:
         return 'todo', f'tile mode {tiling}'
     return 'pack', ''
 
 
-def scan(game, normals=False):
+def scan(game, normals=False, max_size=4096):
     """Manifest rows [path, archive, format, width, height, tiling, decision, reason] of every GNF;
-    `normals` puts the BC5 normal maps in the pack too."""
+    `normals` puts the BC5 normal maps in the pack too, `max_size` is texpack's --max-size."""
     profile = game_profile.for_game(game)
     seen = {}
     for name in profile.archive_names():
@@ -95,7 +97,8 @@ def scan(game, normals=False):
         fmt, tiling = q0 >> 52 & 63, q1 >> 52 & 31
         width, height = (q1 & 0x3fff) + 1, (q1 >> 14 & 0x3fff) + 1
         rows.append([entry, name, NAMES.get(fmt, fmt), width, height, tiling,
-                     *decide(entry, fmt, width, height, tiling, normals, profile.skip_dirs)])
+                     *decide(entry, fmt, width, height, tiling, normals, profile.skip_dirs,
+                            profile.keep_dirs, max_size)])
     return rows
 
 
@@ -106,7 +109,7 @@ def write(rows, out):
 
 def main():
     game, out = Path(sys.argv[1]), sys.argv[2]
-    rows = scan(game)
+    rows = scan(game, max_size=int(sys.argv[3]) if len(sys.argv) > 3 else 4096)
     write(rows, out)
     print(Counter(r[6] for r in rows), Counter(r[7] for r in rows if r[6] != 'pack'), sep='\n')
     print('pack sides:', Counter(max(r[3], r[4]) for r in rows if r[6] == 'pack'))
