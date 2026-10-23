@@ -178,7 +178,7 @@ look in the game. `pack_scan.py <game> out.csv` lists every texture with the dec
 
 `index.txt` lines are `<key> <width> <height> <dds path>`. The key is the XXH3-64 hash of the
 texture's tiled mip 0 as it sits in GPU memory, so a loader matches it whatever file the texture
-came from. Width and height are the original size; the DDS is the upscaled texture with mips (BC7
+came from. Width and height are the size of the DDS, the upscaled texture with mips (BC7
 sRGB for colour, BC4/BC5 UNORM/SNORM for data and normals).
 
 A loader hashes each texture the game uploads, looks the key up and binds the DDS instead. The
