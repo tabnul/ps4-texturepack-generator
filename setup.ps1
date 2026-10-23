@@ -26,11 +26,13 @@ if (-not (Test-Path .venv\Scripts\python.exe)) {
 }
 $python = '.venv\Scripts\python.exe'
 & $python -m pip install --upgrade pip --quiet
-& $python -m pip uninstall -y --quiet torch torchvision torch-directml 2>$null
+# Through cmd: pip warns on stderr when torch is not installed, which PowerShell 5.1 turns into a stop.
+cmd /c "$python -m pip uninstall -y --quiet torch torchvision torch-directml 2>nul"
+# torchvision from the same index: spandrel needs it, and from PyPI it would swap torch for a CPU build.
 switch ($Gpu) {
-    'nvidia' { & $python -m pip install torch --index-url https://download.pytorch.org/whl/cu128 }
+    'nvidia' { & $python -m pip install torch torchvision --index-url https://download.pytorch.org/whl/cu128 }
     'amd'    { & $python -m pip install torch-directml }
-    'cpu'    { & $python -m pip install torch --index-url https://download.pytorch.org/whl/cpu }
+    'cpu'    { & $python -m pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu }
 }
 if ($LASTEXITCODE) { throw 'Installing PyTorch failed (see above).' }
 & $python -m pip install spandrel numpy pillow xxhash
