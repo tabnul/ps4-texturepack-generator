@@ -16,7 +16,8 @@ from pathlib import Path
 import game_profile
 
 # data format -> (bytes per 4x4 block, DDS FourCC or DXGI format for a DX10 header)
-FORMATS = {35: (8, b'DXT1'), 37: (16, b'DXT5'), 38: (8, 80), 39: (16, 83), 41: (16, 98)}
+FORMATS = {35: (8, b'DXT1'), 36: (16, b'DXT3'), 37: (16, b'DXT5'), 38: (8, 80), 39: (16, 83), 41: (16, 98)}
+RGBA8 = 10  # uncompressed, 4 bytes per pixel: an element is one pixel (pack_build.decode_rgba8)
 
 
 def find(game, name):

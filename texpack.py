@@ -78,7 +78,7 @@ def make(args):
     work.mkdir(parents=True, exist_ok=True)
     # 1. Which textures: colour maps, and the BC5 normal maps unless --normal-scale 0.
     manifest = work / 'manifest.csv'
-    write(scan(args.game, normals=args.normal_scale > 0, max_size=args.max_size), manifest)
+    write(scan(args.game, normals=args.normal_scale > 0, max_size=args.max_size, everything=args.all), manifest)
     packed = [r for r in csv.DictReader(open(manifest)) if r['decision'] == 'pack']
     rows = [r for r in packed if args.only in r['path']]
     normals = sum(r['format'] == 'BC5' for r in rows)
@@ -131,6 +131,9 @@ def main():
                         'GPU only about half busy. Use 1 on the CPU or with little video memory (default 3)')
     m.add_argument('--encode-jobs', type=int, default=6,
                    help='texconv runs at the same time for the BC7/BC5 encode (default 6)')
+    m.add_argument('--all', action='store_true',
+                   help='leave nothing original: also hand-drawn art, textures under 256, strips at the size '
+                        'limit and uncompressed pictures (a reference pack to compare smaller packs with)')
     m.add_argument('--only',default='', help='only textures whose path contains this text (to try a few first)')
     m.add_argument('--work', type=Path, help='intermediate files (default: <pack>.work next to the pack)')
     m.add_argument('--clean', action='store_true', help='delete the intermediate PNGs when done')

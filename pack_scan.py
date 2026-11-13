@@ -58,24 +58,27 @@ def inflate(raw):
         return raw
 
 
-def decide(path, fmt, width, height, tiling, normals=False, skip_dirs=(), keep_dirs=(), max_size=4096):
+def decide(path, fmt, width, height, tiling, normals=False, skip_dirs=(), keep_dirs=(), max_size=4096,
+           everything=False):
+    """`everything` (texpack --all) also takes hand-drawn art, textures under 256, strips already at the
+    GPU's size limit and uncompressed RGBA8 pictures: a pack that leaves nothing original, to compare with."""
     side = max(width, height)
     if any(d in path for d in skip_dirs):  # the game profile's data folders
         return 'skip', 'data dir'
-    if any(d in path for d in keep_dirs):  # the game profile's hand-drawn art
+    if not everything and any(d in path for d in keep_dirs):  # the game profile's hand-drawn art
         return 'skip', 'artwork'
-    if fmt not in COLOR and not (normals and fmt == 39):  # 39: BC5 normal map
+    if fmt not in COLOR and not (everything and fmt == 10) and not (normals and fmt == 39):  # 39: BC5 normal map
         return 'skip', f'format {NAMES.get(fmt, fmt)} (data/normal)'
-    if side < 256:
+    if side < 256 and not everything:
         return 'skip', 'small (<256)'
-    if 4 * width * height > max_size * max_size or 2 * side > 16384:  # pack_build.fit would give it less than 2x
+    if not everything and (4 * width * height > max_size * max_size or 2 * side > 16384):  # pack_build.fit would give it less than 2x
         return 'skip', 'already large'
     if tiling != 13:
         return 'todo', f'tile mode {tiling}'
     return 'pack', ''
 
 
-def scan(game, normals=False, max_size=4096):
+def scan(game, normals=False, max_size=4096, everything=False):
     """Manifest rows [path, archive, format, width, height, tiling, decision, reason] of every GNF;
     `normals` puts the BC5 normal maps in the pack too, `max_size` is texpack's --max-size."""
     profile = game_profile.for_game(game)
@@ -98,7 +101,7 @@ def scan(game, normals=False, max_size=4096):
         width, height = (q1 & 0x3fff) + 1, (q1 >> 14 & 0x3fff) + 1
         rows.append([entry, name, NAMES.get(fmt, fmt), width, height, tiling,
                      *decide(entry, fmt, width, height, tiling, normals, profile.skip_dirs,
-                            profile.keep_dirs, max_size)])
+                            profile.keep_dirs, max_size, everything)])
     return rows
 
 

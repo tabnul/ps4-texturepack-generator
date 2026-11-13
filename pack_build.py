@@ -18,14 +18,27 @@ from PIL import Image
 
 import device
 
-from gnf_extract import FORMATS, dds, detile
+from gnf_extract import FORMATS, RGBA8, dds, detile
 from pack_scan import Archive
 from upscale import run
+
+
+def decode_rgba8(data, offset, width, height):
+    """Uncompressed 32-bit texture: 8x8-pixel micro tiles in row order, pixels inside a tile in Morton order
+    (x0 y0 x1 y1 x2 y2), like the blocks of the compressed formats."""
+    pitch, rows = (width + 7) // 8 * 8, (height + 7) // 8 * 8
+    tiles = np.frombuffer(data, np.uint8, pitch * rows * 4, offset).reshape(rows // 8, pitch // 8, 64, 4)
+    y, x = np.mgrid[0:8, 0:8]
+    inner = (x & 1) | (y & 1) << 1 | (x & 2) << 1 | (y & 2) << 2 | (x & 4) << 2 | (y & 4) << 3
+    image = tiles[:, :, inner].transpose(0, 2, 1, 3, 4).reshape(rows, pitch, 4)[:height, :width]
+    return Image.fromarray(np.ascontiguousarray(image), 'RGBA')
 
 
 def decode(data):
     q0, q1 = struct.unpack_from('<QQ', data, 0x10)
     width, height = (q1 & 0x3fff) + 1, (q1 >> 14 & 0x3fff) + 1
+    if q0 >> 52 & 63 == RGBA8:
+        return decode_rgba8(data, 8 + struct.unpack_from('<I', data, 4)[0], width, height)
     block_bytes, dds_fmt = FORMATS[q0 >> 52 & 63]
     if dds_fmt == 83 and q0 >> 58 & 15 == 1:
         dds_fmt = 84  # BC5 SNORM normal map; Pillow decodes it offset by 128
@@ -48,11 +61,12 @@ def normal_map(model, image, size):
 
 def fit(width, height, scale, max_side):
     """The target size: `scale` times the original, shrunk (keeping the aspect) to at most max_side² pixels
-    and 16384 (the GPU limit) on a side. A pixel budget instead of a side limit keeps strips (grass, tile
+    and 16384 (the GPU limit) on each side. A pixel budget instead of a side limit keeps strips (grass, tile
     atlases, 512x2048) at full scale. Past 4096² the extra detail only shows with the camera against the
     surface, at 4x the memory."""
-    shrink = min(1, max_side / (scale * (width * height) ** 0.5), 16384 / (max(width, height) * scale))
-    return max(1, round(width * scale * shrink)), max(1, round(height * scale * shrink))
+    wide, high = min(width * scale, 16384), min(height * scale, 16384)  # a strip at the limit only grows across
+    shrink = min(1, max_side / (wide * high) ** 0.5)
+    return max(1, round(wide * shrink)), max(1, round(high * shrink))
 
 
 def upscale(model, image, scale, normal, max_side=4096):

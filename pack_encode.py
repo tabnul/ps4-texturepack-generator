@@ -19,7 +19,7 @@ from pathlib import Path
 import xxhash
 from PIL import Image
 
-from gnf_extract import FORMATS
+from gnf_extract import FORMATS, RGBA8
 import game_profile
 from pack_scan import Archive
 
@@ -39,13 +39,14 @@ def kind(row, linear_suffixes):
 def keys(data):
     q0, q1 = struct.unpack_from('<QQ', data, 0x10)
     width, height = (q1 & 0x3fff) + 1, (q1 >> 14 & 0x3fff) + 1
-    block_bytes = FORMATS[q0 >> 52 & 63][0]
+    fmt = q0 >> 52 & 63
+    block_bytes, e = (4, 1) if fmt == RGBA8 else (FORMATS[fmt][0], 4)  # element: a pixel or a 4x4 block
     offset = 8 + struct.unpack_from('<I', data, 4)[0]
-    grids = {((width + 3) // 4, (height + 3) // 4)}
+    grids = {((width + e - 1) // e, (height + e - 1) // e)}
     if q1 >> 57 & 1:  # pow2pad
         ceil = lambda v: 1 << (v - 1).bit_length()
-        grids.add((ceil((width + 3) // 4), ceil((height + 3) // 4)))
-        grids.add(((ceil(width) + 3) // 4, (ceil(height) + 3) // 4))
+        grids.add((ceil((width + e - 1) // e), ceil((height + e - 1) // e)))
+        grids.add(((ceil(width) + e - 1) // e, (ceil(height) + e - 1) // e))
     result = []
     for bw, bh in grids:
         size = (bw + 7) // 8 * 8 * ((bh + 7) // 8 * 8) * block_bytes
