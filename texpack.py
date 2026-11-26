@@ -17,7 +17,8 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 MODELS = HERE / 'models'
-TEXCONV = HERE / 'bin' / 'texconv.exe'
+# Linux: the kit's texconv is Texconv-Custom-DLL built as a program (same options, CPU only).
+TEXCONV = HERE / 'bin' / ('texconv.exe' if sys.platform == 'win32' else 'texconv')
 
 
 def default_model():
@@ -34,7 +35,7 @@ def check_inputs(args):
     if args.model is None or not Path(args.model).is_file():
         problems.append(f'no model: put 4x-UltraSharp.safetensors in {MODELS} or pass --model (README.md)')
     if not Path(args.texconv).is_file():
-        problems.append(f'no texconv.exe at {args.texconv}: run setup.ps1 or pass --texconv')
+        problems.append(f'no texconv at {args.texconv}: run setup.ps1 or pass --texconv')
     try:
         args.pack.resolve().relative_to(args.game.resolve())
         problems.append('the pack folder must not be inside the game folder (the game files stay untouched)')

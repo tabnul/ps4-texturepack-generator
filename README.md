@@ -26,7 +26,7 @@ No packs are distributed here; see [Sharing](#sharing).
 
 | Hardware | How it runs | Full TLG pack (colour 4x, normal maps 2x) |
 |---|---|---|
-| NVIDIA (GTX 10xx or newer) | PyTorch + CUDA, half precision | a few hours |
+| NVIDIA RTX 20 or newer (CUDA 12.8 builds of PyTorch dropped the GTX 10xx) | PyTorch + CUDA, half precision | a few hours |
 | AMD Radeon, Intel Arc | PyTorch + DirectML (DirectX 12) | slower than CUDA |
 | No usable GPU | CPU | ~1 minute per 1024×1024 texture on 16 threads: **days** for a full pack. Fine for a few textures with `--only` |
 
@@ -119,7 +119,8 @@ used when a surface fills more pixels than the level below it: close up, and at 
 
 - **Tested best at 3840×1600:** `--max-size 8192` (colour 4x, normal maps 2x). Compared texture by
   texture against a 4096 pack in game, every texture was the same or better. The full pack is about
-  72 GB on disk; the port keeps at most 16 GB of it in video memory.
+  72 GB on disk. The port loads pack textures only into video memory the game leaves free (at most
+  16 GB), and frees them again when the game needs the room.
   ```
   texpack make "D:\Games\CUSA03745" "D:\Packs\UltraSharp 4x 8k" --max-size 8192
   ```
@@ -223,6 +224,30 @@ reference implementation is `Vulkan::TexturePack` in tlg_pc
 
 A pack is made from the game's own textures: share the **tool**, not the pack. The UltraSharp
 model's licence also rules out commercial use of what it makes.
+
+## Ready-made kits
+
+Instead of `setup.ps1`, a kit holds everything needed to run the generator in one folder: Python,
+PyTorch, the generator and texconv. Nothing gets installed. The TLG launcher downloads the right kit by
+itself; you can also take one from the `kit-v*` releases of this repository.
+
+| Kit | GPU | Status |
+|---|---|---|
+| `kit-windows-nvidia`, `kit-linux-nvidia` | Nvidia RTX 20 or newer (CUDA 12.8) | tested setup |
+| `kit-windows-amd` | AMD (and Intel) through DirectML | experimental |
+| `kit-linux-amd` | AMD through ROCm 7.2 | experimental |
+| `kit-windows-cpu`, `kit-linux-cpu` | none | works, but takes days for a full pack |
+
+A kit comes as `.tar.xz.000`, `.001`, ... parts (GitHub allows under 2 GB per file) and a `.json` with
+the sha256 of every part. Join the parts in order and unpack. Then fetch the model into
+`generator/models/` (the `.json` says where from and its sha256) and run
+`python/python.exe -E -s generator/texpack.py make ...` (Linux: `python/bin/python3`).
+
+On Linux, texconv is matyalatte's [Texconv-Custom-DLL](https://github.com/matyalatte/Texconv-Custom-DLL)
+(MIT), built from DirectXTex as a program: same options, but it encodes on the CPU only.
+
+Kits are built by `.github/workflows/kits.yml` with `kit/build_kit.py`. `kit/THIRD-PARTY.md` lists what is
+inside and under which license.
 
 ## License
 

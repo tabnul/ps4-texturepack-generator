@@ -1,0 +1,83 @@
+# Ready-to-run generator kits (Python + PyTorch + generator + texconv), one per system and GPU kind.
+# A kit-v* tag publishes them as a release; a manual run keeps them as workflow artifacts for testing.
+name: kits
+
+on:
+  push:
+    tags: ['kit-v*']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  texconv-linux:
+    # Texconv-Custom-DLL (matyalatte, MIT) as a program: DirectXTex's texconv for Linux, CPU only.
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Build texconv
+        run: |
+          sudo apt-get update && sudo apt-get install -y cmake nasm
+          git clone --depth 1 --branch v0.6.0 --recurse-submodules --shallow-submodules \
+            https://github.com/matyalatte/Texconv-Custom-DLL.git tc
+          cd tc && bash build.cmd --use-optional-formats --build-as-exe --no-texassemble
+          ./texconv --help | head -3 || true
+          test -x texconv
+      - uses: actions/upload-artifact@v4
+        with:
+          name: texconv-linux
+          path: tc/texconv
+
+  kit:
+    needs: texconv-linux
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows, linux]
+        gpu: [nvidia, amd, cpu]
+    runs-on: ${{ matrix.os == 'windows' && 'windows-2022' || 'ubuntu-22.04' }}
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+      - name: Free disk space
+        if: matrix.os == 'linux'
+        run: |
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL /usr/local/share/boost
+          sudo docker image prune --all --force || true
+          df -h /
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: texconv (Windows, DirectXTex)
+        if: matrix.os == 'windows'
+        run: curl -fL -o texconv.exe https://github.com/microsoft/DirectXTex/releases/download/may2026/texconv.exe
+      - name: texconv (Linux)
+        if: matrix.os == 'linux'
+        uses: actions/download-artifact@v4
+        with:
+          name: texconv-linux
+          path: .
+      - name: Build kit
+        run: |
+          version="${GITHUB_REF_NAME#kit-}"
+          [ "$GITHUB_REF_TYPE" = tag ] || version="dev-${GITHUB_SHA::7}"
+          texconv=texconv; [ "${{ matrix.os }}" = windows ] && texconv=texconv.exe
+          chmod +x "$texconv"
+          python kit/build_kit.py ${{ matrix.os }} ${{ matrix.gpu }} "$texconv" out --version "$version"
+          ls -la out
+      - name: Publish to the release
+        if: github.ref_type == 'tag'
+        uses: softprops/action-gh-release@v2
+        with:
+          prerelease: true
+          files: out/kit-*
+      - name: Keep as test artifact
+        if: github.ref_type != 'tag'
+        uses: actions/upload-artifact@v4
+        with:
+          name: kit-${{ matrix.os }}-${{ matrix.gpu }}
+          path: out/kit-*
+          compression-level: 0
+          retention-days: 7
